@@ -263,7 +263,7 @@ impl Storage {
         }
 
         self.expire();
-        self.first_fetch = self.first_fetch.max(self.last_fetch - 3600 * 24 * 10);
+        self.first_fetch = self.first_fetch.max(self.last_fetch - 3600 * 24 * Config::get().expire);
         self.save();
     }
 }

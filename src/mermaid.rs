@@ -40,6 +40,10 @@ body {{
     font-family: Arial, Helvetica, sans-serif;
 }}
 
+.green {{
+    color: #a6e3a1 !important;
+}}
+
 table {{
     margin: auto;
 }}
@@ -49,7 +53,7 @@ table * * {{
 }}
 
 </style>
-<h1>{username}</h1>
+<h1{}>{username}</h1>
 <pre class="mermaid">
   {}
 </pre>
@@ -70,6 +74,11 @@ table * * {{
 </table>
 </body>
 </html>"#,
+                if Storage::is_online(username) {
+                    " class=\"green\""
+                } else {
+                    ""
+                },
                 user.timeofday,
                 user.daily,
                 user.weekly,

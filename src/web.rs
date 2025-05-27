@@ -19,12 +19,12 @@ pub async fn run() {
 async fn root() -> Html<String> {
     let mut users = Storage::copy().users.keys().collect::<Vec<_>>();
     users.sort_by(|a, b| {
-        if Storage::is_online(a) {
-            Ordering::Greater
-        } else if Storage::is_online(b) {
+        if Storage::is_online(a) && !Storage::is_online(b) {
             Ordering::Less
+        } else if Storage::is_online(b) {
+            Ordering::Greater
         } else {
-            Ordering::Equal
+            a.cmp(b)
         }
     });
     Html(format!(
@@ -46,6 +46,15 @@ body {{
 a {{
     color: #eceff4 !important;
     font-size: larger;
+    text-decoration: none;
+}}
+
+.name {{
+    padding: 3px;
+}}
+
+.green {{
+    color: #a6e3a1 !important;
 }}
 </style>
 
@@ -53,11 +62,15 @@ a {{
 {}
 </body>
 </html>"#,
-        Storage::copy()
-            .users
-            .keys()
+        users
+            .iter()
             .map(|name| format!(
-                "<div><a href=\"/{name}\">{name}{}</a></div>",
+                r#"<div class="name"><a{} href="{name}">{name}{}</a></div>"#,
+                if Storage::is_online(name) {
+                    " class=\"green\""
+                } else {
+                    ""
+                },
                 if Storage::is_online(name) {
                     " (online)"
                 } else {

@@ -1,4 +1,10 @@
-use std::{env, fs, io::Write, path::PathBuf, sync::OnceLock};
+use std::{
+    collections::{HashMap, HashSet},
+    env, fs,
+    io::Write,
+    path::PathBuf,
+    sync::OnceLock,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -6,10 +12,20 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub key: String,
     pub interval: u64,
+    pub discord_token: String,
+    pub broadcast_channels: HashMap<u64, BroadcastChannel>,
     pub port: u16,
     pub merge: u64,
     pub expire: u64,
     pub users: Vec<Identifier>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BroadcastChannel {
+    pub online: String,
+    pub resumed: String,
+    pub offline: String,
+    pub users: HashSet<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -23,6 +39,8 @@ impl Default for Config {
         Self {
             key: String::new(),
             interval: 60,
+            discord_token: String::new(),
+            broadcast_channels: HashMap::new(),
             port: 8080,
             merge: 60,
             expire: 70,

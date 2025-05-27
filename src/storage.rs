@@ -1,17 +1,12 @@
 use std::{
-    collections::HashMap,
-    env,
-    error::Error,
-    fs,
-    io::Write,
-    path::PathBuf,
-    sync::OnceLock,
+    collections::HashMap, env, error::Error, fs, io::Write, path::PathBuf, sync::OnceLock,
+    time::Duration,
 };
 
 use serde::{Deserialize, Serialize};
 use tokio::{sync::Mutex, task::JoinSet};
 
-use crate::Config;
+use crate::{Config, SENDER};
 
 pub static mut STORAGE_COPY: OnceLock<Storage> = OnceLock::new();
 
@@ -135,8 +130,8 @@ impl Storage {
         serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap()
     }
 
-    pub fn push_beginning(&mut self, user: String, time: u64) {
-        let user = self.users.entry(user).or_default();
+    pub fn push_beginning(&mut self, username: String, time: u64) {
+        let user = self.users.entry(username.clone()).or_default();
 
         match () {
             _ if user.is_empty() => user.push(Record {
@@ -144,6 +139,7 @@ impl Storage {
                 session_begin: time,
                 end: None,
             }),
+            _ if user.last().unwrap().session_begin == time => return,
             _ if user.last().unwrap().end.is_none() => {
                 *user.last_mut().unwrap() = Record {
                     beginning: time,
@@ -151,12 +147,20 @@ impl Storage {
                     end: None,
                 }
             }
-            _ if user.last().unwrap().beginning == time => {}
             _ if user.last().unwrap().end.unwrap() < time
                 && time - user.last().unwrap().end.unwrap() < Config::get().merge * 1000 =>
             {
                 user.last_mut().unwrap().end = None;
                 user.last_mut().unwrap().session_begin = time;
+                SENDER
+                    .get()
+                    .unwrap()
+                    .send(crate::BroadcastEvent::Online {
+                        user: username,
+                        resumed: true,
+                    })
+                    .unwrap();
+                return;
             }
             _ => user.push(Record {
                 beginning: time,
@@ -164,17 +168,49 @@ impl Storage {
                 end: None,
             }),
         }
+
+        SENDER
+            .get()
+            .unwrap()
+            .send(crate::BroadcastEvent::Online {
+                user: username,
+                resumed: false,
+            })
+            .unwrap();
     }
 
-    pub fn push_logout(&mut self, user: String, time: u64) {
-        let user = self.users.entry(user).or_default();
+    pub fn push_logout(&mut self, username: String, time: u64, login: u64) {
+        if time < login {
+            return;
+        }
+
+        let user = self.users.entry(username.clone()).or_default();
 
         match () {
             _ if user.is_empty()
                 || user.last().unwrap().end.is_some()
-                || user.last_mut().unwrap().session_begin > time => {}
+                || user.last_mut().unwrap().session_begin > time =>
+            {
+                return;
+            }
             _ => user.last_mut().unwrap().end = Some(time),
         }
+
+        SENDER
+            .get()
+            .unwrap()
+            .send(crate::BroadcastEvent::Offline {
+                user: username,
+                duration: Duration::from_millis(
+                    (chrono::DateTime::from_timestamp_millis(time as i64).unwrap()
+                        - chrono::DateTime::from_timestamp_millis(
+                            user.last().unwrap().beginning as i64,
+                        )
+                        .unwrap())
+                    .num_milliseconds() as u64,
+                ),
+            })
+            .unwrap();
     }
 
     pub async fn fetch_one(uuid: &str, key: &str) -> Result<Fetched, Box<dyn Error>> {
@@ -223,7 +259,7 @@ impl Storage {
             .filter_map(std::convert::identity)
         {
             self.push_beginning(name.clone(), fetched.last_login);
-            self.push_logout(name.clone(), fetched.last_logout);
+            self.push_logout(name.clone(), fetched.last_logout, fetched.last_login);
         }
 
         self.expire();

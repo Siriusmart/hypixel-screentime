@@ -12,3 +12,7 @@ mod web;
 pub use web::run;
 
 mod mermaid;
+pub use mermaid::*;
+
+mod discord;
+pub use discord::*;

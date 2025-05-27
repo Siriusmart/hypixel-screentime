@@ -1,10 +1,6 @@
-use std::{sync::atomic::AtomicU64, time::Duration};
-
-use tokio::{sync::Mutex, task};
+use std::time::Duration;
 
 use crate::{Config, STORAGE_COPY, Storage};
-
-static mut last_save: u64 = 0;
 
 pub async fn fetch() {
     let config = Config::get();
@@ -20,7 +16,6 @@ pub async fn fetch() {
         }
         let now = chrono::Utc::now().timestamp() as u64;
         let sleep = (Storage::get().lock().await.last_fetch + config.interval).saturating_sub(now);
-        dbg!(sleep);
         tokio::time::sleep(Duration::from_secs(sleep)).await;
         Storage::fetch(&mut *Storage::get().lock().await).await;
         let now = chrono::Utc::now().timestamp() as u64;

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-    pub keys: Vec<String>,
+    pub keys: HashSet<String>,
     pub interval: u64,
     pub discord_token: String,
     pub broadcast_channels: HashMap<u64, BroadcastChannel>,
@@ -37,7 +37,7 @@ pub struct Identifier {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            keys: Vec::new(),
+            keys: HashSet::new(),
             interval: 60,
             discord_token: String::new(),
             broadcast_channels: HashMap::new(),

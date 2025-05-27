@@ -19,7 +19,11 @@ pub async fn run() {
 }
 
 async fn root() -> Html<String> {
-    let mut users = Storage::copy().users.keys().collect::<Vec<_>>();
+    let mut users = Storage::copy()
+        .users
+        .keys()
+        .filter(|name| Config::get().keys.contains(&**name))
+        .collect::<Vec<_>>();
     users.sort_by(
         |a, b| match (Storage::is_online(a), Storage::is_online(b)) {
             (true, false) => Ordering::Less,

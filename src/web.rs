@@ -19,10 +19,11 @@ pub async fn run() {
 }
 
 async fn root() -> Html<String> {
-    let mut users = Storage::copy()
+    let mut users = Config::get()
         .users
-        .keys()
-        .filter(|name| Config::get().keys.contains(&**name))
+        .iter()
+        .map(|entry| entry.name.clone())
+        .filter(|name| Storage::copy().users.contains_key(name))
         .collect::<Vec<_>>();
     users.sort_by(
         |a, b| match (Storage::is_online(a), Storage::is_online(b)) {

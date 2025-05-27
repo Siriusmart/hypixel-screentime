@@ -68,7 +68,7 @@ body {{
     transition: 100ms;
 }}
 
-.green {{
+.name a.green {{
     color: #a6e3a1 !important;
 }}
 

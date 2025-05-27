@@ -1,5 +1,11 @@
 use std::{
-    collections::HashMap, env, error::Error, fs, io::Write, path::PathBuf, sync::OnceLock,
+    collections::HashMap,
+    env,
+    error::Error,
+    fs,
+    io::Write,
+    path::PathBuf,
+    sync::{Arc, OnceLock},
     time::Duration,
 };
 
@@ -229,7 +235,7 @@ impl Storage {
         .player)
     }
 
-    pub async fn fetch(&mut self, key: &'static str) {
+    pub async fn fetch(&mut self, keys: &Arc<Vec<&'static String>>, index: &mut usize) {
         let config = Config::get();
 
         let mut set = JoinSet::new();
@@ -238,8 +244,10 @@ impl Storage {
 
         config.users.iter().for_each(|user| {
             let user = user.clone();
+            let this_index = *index;
+            let keys_copy = keys.clone();
             set.spawn(async move {
-                match Self::fetch_one(&user.uuid, key).await {
+                match Self::fetch_one(&user.uuid, keys_copy[this_index]).await {
                     Ok(fetched) => return Some((user.name, fetched)),
                     Err(e) => println!(
                         "Failed to fetch user={}, uuid={} - {e}",
@@ -249,6 +257,8 @@ impl Storage {
 
                 None
             });
+
+            *index = (*index + 1) % keys.len();
         });
 
         for (name, fetched) in set

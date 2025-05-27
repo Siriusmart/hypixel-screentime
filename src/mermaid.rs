@@ -52,7 +52,16 @@ table * * {{
     padding: 10px;
 }}
 
+#home {{
+    text-decoration: none;
+    padding: 20px;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    color: #eceff4;
+}}
 </style>
+<a id="home" href="/">&gt;Back Home</a>
 <h1{}>{username}</h1>
 <pre class="mermaid">
   {}

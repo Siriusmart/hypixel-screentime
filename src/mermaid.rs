@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::Display, sync::OnceLock};
 
 use chrono::{DateTime, Datelike, NaiveTime, Timelike, Utc};
 
-use crate::{Record, Storage};
+use crate::{Record, Storage, web::HEART};
 
 pub struct Mermaid {
     weekly: Weekly,
@@ -58,11 +58,20 @@ table * * {{
     position: absolute;
     top: 0px;
     left: 0px;
+}}
+
+#home {{
     color: #eceff4;
+    transition: 100ms;
+}}
+
+#home:hover {{
+    transition: 100ms;
+    color: #ee99a0;
 }}
 </style>
 <a id="home" href="/">&gt;Back Home</a>
-<h1{}>{username}</h1>
+<h1{}>{username}{}</h1>
 <pre class="mermaid">
   {}
 </pre>
@@ -81,10 +90,20 @@ table * * {{
 </tr>
 {}
 </table>
+<br>
+<br>
+<footer>
+  <p>Hypixel Screentime by <i><b>Sirius</b></i> | <span style="border-bottom: 2px solid #a6e3a1;"><a class="green" target="_blank" href="https://github.com/siriusmart/hypixel-screentime" style="text-decoration: none;">Written with {HEART} in Rust</a></span></p>
+</footer>
 </body>
 </html>"#,
                 if Storage::is_online(username) {
                     " class=\"green\""
+                } else {
+                    ""
+                },
+                if Storage::is_online(username) {
+                    " (online)"
                 } else {
                     ""
                 },
@@ -200,7 +219,7 @@ impl Display for Weekly {
             r#"xychart-beta
      title "Weekly login"
      x-axis [-9, -8, -7, -6, -5, -4, -3, -2, -1, 0]
-     y-axis "Hours online"
+     y-axis "Avg. hours online"
      bar {}
 "#,
             serde_json::to_string(&weekly).unwrap()
@@ -222,7 +241,7 @@ impl Display for TimeOfDay {
         f.write_fmt(format_args!(r#"xychart-beta
     title "Time of day (GMT)"
     x-axis [00, 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
-    y-axis "Minutes online"
+    y-axis "Avg. minutes online"
     bar {}
 "#, serde_json::to_string(&timeofday).unwrap()))
     }
@@ -243,7 +262,7 @@ impl Display for Daily {
             r#"xychart-beta
      title "Day of week"
      x-axis [1, 2, 3, 4, 5, 6, 7]
-     y-axis "Hours online"
+     y-axis "Avg. hours online"
      bar {}
 "#,
             serde_json::to_string(&daily).unwrap()

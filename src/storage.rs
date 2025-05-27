@@ -229,9 +229,8 @@ impl Storage {
         .player)
     }
 
-    pub async fn fetch(&mut self) {
+    pub async fn fetch(&mut self, key: &'static str) {
         let config = Config::get();
-        let key = &config.key;
 
         let mut set = JoinSet::new();
 
@@ -263,7 +262,9 @@ impl Storage {
         }
 
         self.expire();
-        self.first_fetch = self.first_fetch.max(self.last_fetch - 3600 * 24 * Config::get().expire);
+        self.first_fetch = self
+            .first_fetch
+            .max(self.last_fetch - 3600 * 24 * Config::get().expire);
         self.save();
     }
 }

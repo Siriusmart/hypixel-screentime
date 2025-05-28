@@ -120,6 +120,10 @@ table * * {{
         unsafe { MERMAID_DATA.get_or_init(Self::init) }
     }
 
+    pub fn update() {
+        unsafe { *MERMAID_DATA.get_mut().unwrap() = Self::init() }
+    }
+
     pub fn init() -> HashMap<String, Mermaid> {
         Storage::copy()
             .users
@@ -172,7 +176,10 @@ table * * {{
             };
 
             let start = chrono::DateTime::from_timestamp_millis(record.beginning as i64).unwrap();
-            let end = chrono::DateTime::from_timestamp_millis(record.end.unwrap() as i64).unwrap();
+            let end = chrono::DateTime::from_timestamp_millis(
+                record.end.unwrap_or(now.timestamp_millis() as u64) as i64,
+            )
+            .unwrap();
 
             if start.date_naive() == end.date_naive() {
                 push(start, end);

@@ -12,7 +12,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 use tokio::{sync::Mutex, task::JoinSet};
 
-use crate::{Config, SENDER};
+use crate::{Config, Mermaid, SENDER};
 
 pub static mut STORAGE_COPY: OnceLock<Storage> = OnceLock::new();
 
@@ -250,8 +250,8 @@ impl Storage {
                 match Self::fetch_one(&user.uuid, keys_copy[this_index]).await {
                     Ok(fetched) => return Some((user.name, fetched)),
                     Err(e) => println!(
-                        "Failed to fetch user={}, uuid={} - {e}",
-                        user.uuid, user.uuid
+                        "Failed to fetch user={}, uuid={}, key={} - {e}",
+                        user.uuid, user.uuid, keys_copy[this_index]
                     ),
                 }
 
@@ -276,6 +276,7 @@ impl Storage {
             .first_fetch
             .max(self.last_fetch - 3600 * 24 * Config::get().expire);
         self.save();
+        Mermaid::update();
     }
 }
 

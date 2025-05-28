@@ -11,3 +11,4 @@ reqwest = { version = "*", features = [ "json" ]}
 tokio = { version = "1", features = [ "tokio-macros", "rt-multi-thread", "signal" ] }
 chrono = "*"
 serenity = "*"
+futures = "*"

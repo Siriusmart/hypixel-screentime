@@ -4,6 +4,7 @@ use chrono::{DateTime, Datelike, NaiveTime, Timelike, Utc};
 
 use crate::{Record, Storage, web::HEART};
 
+#[derive(Clone)]
 pub struct Mermaid {
     weekly: Weekly,
     daily: Daily,
@@ -11,16 +12,20 @@ pub struct Mermaid {
 }
 
 // reversed order
+#[derive(Clone)]
 pub struct Daily(pub [u64; 7]);
+#[derive(Clone)]
 pub struct Weekly(pub [u64; 10]);
+#[derive(Clone)]
 pub struct TimeOfDay(pub [u64; 24]);
 
-pub static mut MERMAID_DATA: OnceLock<HashMap<String, Mermaid>> = OnceLock::new();
+pub static mut MERMAID_DATA: OnceLock<HashMap<String, OnceLock<Mermaid>>> = OnceLock::new();
 
 impl Mermaid {
     pub fn html(username: &str) -> String {
-        match Self::get().get(username) {
-            Some(user) => format!(
+        if Storage::copy().users.contains_key(username) {
+            let user = Mermaid::get(username);
+            format!(
                 r#"<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -111,17 +116,38 @@ table * * {{
                 user.daily,
                 user.weekly,
                 Storage::print_log(username)
-            ),
-            None => "No such user".to_string(),
+            )
+        } else {
+            "No such user".to_string()
         }
     }
 
-    pub fn get() -> &'static HashMap<String, Self> {
-        unsafe { MERMAID_DATA.get_or_init(Self::init) }
+    pub fn get(username: &str) -> Self {
+        unsafe {
+            MERMAID_DATA.get_or_init(HashMap::new);
+            MERMAID_DATA
+                .get_mut()
+                .unwrap()
+                .entry(username.to_string())
+                .or_default()
+                .get_or_init(|| {
+                    futures::executor::block_on(async {
+                        Self::build(
+                            Storage::get()
+                                .lock()
+                                .await
+                                .users
+                                .get(username)
+                                .unwrap_or(&Vec::new()),
+                        )
+                    })
+                })
+                .clone()
+        }
     }
 
     pub fn update() {
-        unsafe { *MERMAID_DATA.get_mut().unwrap() = Self::init() }
+        unsafe { *MERMAID_DATA.get_mut().unwrap() = HashMap::new() }
     }
 
     pub fn init() -> HashMap<String, Mermaid> {
@@ -132,15 +158,7 @@ table * * {{
             .collect()
     }
 
-    pub unsafe fn build_all() {
-        if MERMAID_DATA.get().is_some() {
-            *MERMAID_DATA.get_mut().unwrap() = Self::init()
-        } else {
-            MERMAID_DATA.set(Self::init());
-        }
-    }
-
-    pub fn build(records: &Vec<Record>) -> Self {
+    pub fn build(records: &[Record]) -> Self {
         let now = chrono::Utc::now();
 
         let mut daily = [0; 7];
@@ -268,7 +286,7 @@ impl Display for Daily {
         f.write_fmt(format_args!(
             r#"xychart-beta
      title "Day of week"
-     x-axis [1, 2, 3, 4, 5, 6, 7]
+     x-axis [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
      y-axis "Avg. hours online"
      bar {}
 "#,

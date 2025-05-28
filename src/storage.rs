@@ -261,12 +261,7 @@ impl Storage {
             *index = (*index + 1) % keys.len();
         });
 
-        for (name, fetched) in set
-            .join_all()
-            .await
-            .into_iter()
-            .filter_map(std::convert::identity)
-        {
+        for (name, fetched) in set.join_all().await.into_iter().flatten() {
             self.push_beginning(name.clone(), fetched.last_login);
             self.push_logout(name.clone(), fetched.last_logout, fetched.last_login);
         }

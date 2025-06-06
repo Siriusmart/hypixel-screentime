@@ -20,8 +20,7 @@ CONFIG=/home/yourname/.config/hypixel-screentime hypixel-screentime
 ```js
 {
   "keys": [
-    "your hypixel API keys",
-    "get them at developer.hypixel.net"
+    "your hypixel API key"
   ],
   "interval": 120, // interval between fetching user info, in seconds
   "port": 8010,    // port to bind to
@@ -71,9 +70,3 @@ CONFIG=/home/yourname/.config/hypixel-screentime hypixel-screentime
 ```sh
 CONFIG=/home/yourname/.config/hypixel-screentime hypixel-screentime
 ```
-
-## Operation Tips
-
-- Do not set the interval too high, you will get throttled even if your usage is below the hard limit, ask me.
-- You will need to keep this on 24/7 for meaningful tracking.
-- If you are serving this website for more than a few people, consider using multiple API keys, usage will be spread evenly between them.
